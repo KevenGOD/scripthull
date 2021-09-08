@@ -48,7 +48,7 @@ end
 
 if not isfile("hexagon/custom_skins.txt") then
 	print("downloading hexagon custom skins file")
-	writefile("hexagon/custom_skins.txt", game:HttpGet("https://pastebin.com/8ScEFJb1"))
+	writefile("hexagon/custom_skins.txt", game:HttpGet("https://pastebin.com/raw/8ScEFJb1"))
 end
 
 if not isfile("hexagon/custom_models.txt") then
