@@ -1,0 +1,585 @@
+    --////////////////////////////CARREGAMENTO\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    local OrionLib = loadstring(game:HttpGet(('https://raw.githubusercontent.com/shlexware/Orion/main/source')))()
+
+    --////////////////////////////MENU\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--        
+    local Window = OrionLib:MakeWindow({Name = "🤬 KevenGOD HUB 🤬 | 🔥 Prison Life 🔥", HidePremium = false, SaveConfig = true, IntroEnabled = false})
+    --////////////////////////////PONTOS\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    local plr = game.Players.LocalPlayer
+    local Teams = game.Players.LocalPlayer
+    local char = plr.Character
+
+--////////////////////////////Combat Button\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+local Combate = Window:MakeTab({
+	Name = "Combate",
+	Icon = "rbxassetid://4483345998",
+	PremiumOnly = false
+})
+
+local Section = Combate:AddSection({
+	Name = "🤡  Combate  🤡"
+})
+
+Combate:AddButton({
+	Name = "🔥  Silence Aim",
+	Callback = function()
+        local Players = game.Players
+        local LocalPlayer = Players.LocalPlayer
+        local GetPlayers = Players.GetPlayers
+        local Camera = workspace.CurrentCamera
+        local WTSP = Camera.WorldToScreenPoint
+        local FindFirstChild = game.FindFirstChild
+        local Vector2_new = Vector2.new
+        local Mouse = LocalPlayer.GetMouse(LocalPlayer)
+        function ClosestChar()
+            local Max, Close = math.huge
+            for I,V in pairs(GetPlayers(Players)) do
+                if V ~= LocalPlayer and V.Team ~= LocalPlayer.Team and V.Character then
+                    local Head = FindFirstChild(V.Character, "Head")
+                    if Head then
+                        local Pos, OnScreen = WTSP(Camera, Head.Position)
+                        if OnScreen then
+                            local Dist = (Vector2_new(Pos.X, Pos.Y) - Vector2_new(Mouse.X, Mouse.Y)).Magnitude
+                            if Dist < Max then
+                                Max = Dist
+                                Close = V.Character
+                            end
+                        end
+                    end
+                end
+            end
+            return Close
+        end
+        
+        local MT = getrawmetatable(game)
+        local __namecall = MT.__namecall
+        setreadonly(MT, false)
+        MT.__namecall = newcclosure(function(self, ...)
+            local Method = getnamecallmethod()
+            if Method == "FindPartOnRay" and not checkcaller() and tostring(getfenv(0).script) == "GunInterface" then
+                local Character = ClosestChar()
+                if Character then
+                    return Character.Head, Character.Head.Position
+                end
+            end
+        
+            return __namecall(self, ...)
+        end)
+        setreadonly(MT, true)
+  	end    
+})
+
+--////////////////////////////ESP Button\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+local Tab = Window:MakeTab({
+    Name = "Esp",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section = Tab:AddSection({
+    Name = "🤪  Esp  🤪"
+})
+
+getgenv().cham = false
+getgenv().nameESP = false
+getgenv().boxESP = false
+
+
+getgenv().esp_loaded = false
+getgenv().Visibility = false
+
+
+Tab:AddToggle({
+Name = "💡  ESP",
+Default = getgenv().Visibility,
+Callback = function(Value)
+    if getgenv().esp_loaded == false and Value == true then
+        getgenv().esp_loaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/skatbr/Roblox-Releases/main/A_simple_esp.lua", true))()
+    end
+    getgenv().Visibility = Value
+end   
+})
+
+local Section = Tab:AddSection({
+    Name = "🌐  Opções Do Esp  🌐"
+})
+
+Tab:AddToggle({
+Name = "⭐  Box ESP",
+Default = getgenv().Visibility,
+Callback = function(Value)
+    if getgenv().esp_loaded == false and Value == true then
+        getgenv().esp_loaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/skatbr/Roblox-Releases/main/A_simple_esp.lua", true))()
+    end
+    getgenv().boxESP = Value
+end   
+})
+
+
+Tab:AddToggle({
+Name = "⭐  Nomes",
+Default = getgenv().Visibility,
+Callback = function(Value)
+    if getgenv().esp_loaded == false and Value == true then
+        getgenv().esp_loaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/skatbr/Roblox-Releases/main/A_simple_esp.lua", true))()
+    end
+    getgenv().nameESP = Value
+end   
+})
+
+
+Tab:AddToggle({
+Name = "⭐  Brilho",
+Default = getgenv().Visibility,
+Callback = function(Value)
+    if getgenv().esp_loaded == false and Value == true then
+        getgenv().esp_loaded = true
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/skatbr/Roblox-Releases/main/A_simple_esp.lua", true))()
+    end
+    getgenv().cham = Value
+end   
+})
+
+
+function SendNote(message : string, time)
+OrionLib:MakeNotification({
+    Name = "Title!",
+    Content = message,
+    Image = "rbxassetid://4483345998",
+    Time = time or 3
+})
+end
+
+
+
+Tab:AddToggle({
+    Name = "⭐  Cor Do Time",
+    Default = false,
+    Callback = function(Value)
+        getgenv().useTeamColor = Value
+    end
+})
+
+--////////////////////////////Player Button\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    local Playerz = Window:MakeTab({
+        Name = "Player",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+})
+
+    local Section = Playerz:AddSection({
+        Name = "😎 Opções Do Player 😎"
+})
+
+Playerz:AddButton({
+    Name = "👊  Super Soco",
+    Callback = function()
+        mainRemotes = game.ReplicatedStorage meleeRemote = mainRemotes['meleeEvent'] mouse = game.Players.LocalPlayer:GetMouse() punching = false cooldown = false function punch() cooldown = true local part = Instance.new("Part", game.Players.LocalPlayer.Character) part.Transparency = 1 part.Size = Vector3.new(5, 2, 3) part.CanCollide = false local w1 = Instance.new("Weld", part) w1.Part0 = game.Players.LocalPlayer.Character.Torso w1.Part1 = part w1.C1 = CFrame.new(0,0,2) part.Touched:connect(function(hit) if game.Players:FindFirstChild(hit.Parent.Name) then local plr = game.Players:FindFirstChild(hit.Parent.Name) if plr.Name ~= game.Players.LocalPlayer.Name then part:Destroy() for i = 1,100 do meleeRemote:FireServer(plr) end end end end) wait(1) cooldown = false part:Destroy() end mouse.KeyDown:connect(function(key) if cooldown == false then if key:lower() == "f" then punch() end end end)
+
+      end    
+})
+
+Playerz:AddButton({
+    Name = "🔮  Invisibilidade",
+    Callback = function()
+        local player = game.Players.LocalPlayer
+        position     = player.Character.HumanoidRootPart.Position
+        wait(0.1)
+        player.Character:MoveTo(position + Vector3.new(0, 1000000, 0))
+        wait(0.1)
+        humanoidrootpart = player.Character.HumanoidRootPart:clone()
+        wait(0.1)
+        player.Character.HumanoidRootPart:Destroy()
+        humanoidrootpart.Parent = player.Character
+        player.Character:MoveTo(position)
+        wait()
+        -- Remove this if you want to see yourself (others still won't see you)
+        game.Players.LocalPlayer.Character.Torso.Transparency = 1
+        game.Players.LocalPlayer.Character.Head.Transparency  = 1
+        game.Players.LocalPlayer.Character["Left Arm"].Transparency = 1
+        game.Players.LocalPlayer.Character["Right Arm"].Transparency = 1
+        game.Players.LocalPlayer.Character["Left Leg"].Transparency = 1
+        game.Players.LocalPlayer.Character["Right Leg"].Transparency = 1
+        game.Players.LocalPlayer.Character.Humanoid:RemoveAccessories()
+        game.Players.LocalPlayer.Character.Head.face:Remove()
+    end
+})
+
+Playerz:AddSlider({
+    Name = "🚀  Super Velocidade",
+    Min = 16,
+    Max = 250,
+    Default = 16,
+    Color = Color3.fromRGB(180,0,0),
+    Increment = 1,
+    ValueName = "Speed",
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = (Value)
+    end
+})
+
+Playerz:AddSlider({
+    Name = "🚀🎈  Super Pulo",
+    Min = 50,
+    Max = 250,
+    Default = 50,
+    Color = Color3.fromRGB(255,0,0),
+    Increment = 1,
+    ValueName = "Jump",
+    Callback = function(Value)
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = (Value)
+    end
+})
+
+Playerz:AddButton({
+	Name = "✨  NoClip  (Bind Ativadora Na  Letra X)",
+	Callback = function()
+        local Players, RService = game:GetService("Players"), game:GetService("RunService");
+        local LocalP, Mouse = Players.LocalPlayer, Players.LocalPlayer:GetMouse();
+        local Rm, Index, NIndex, NCall, Caller = getrawmetatable(game), getrawmetatable(game).__index, getrawmetatable(game).__newindex, getrawmetatable(game).__namecall, checkcaller or is_protosmasher_caller
+        local NoClip, NoClipKey = false, "x" 
+        setreadonly(Rm, false)
+        
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/zxciaz/Universal-Scripts/main/Notification%20Function", true))()
+        
+        Rm.__newindex = newcclosure(function(self, Meme, Value)
+            if Caller() then return NIndex(self, Meme, Value) end 
+            if tostring(self) == "HumanoidRootPart" or tostring(self) == "Torso" then 
+                if Meme == "CFrame" and self:IsDescendantOf(LocalP.Character) then 
+                    return true -- Credits to ze_lI for this
+                end
+            end
+            return NIndex(self, Meme, Value)
+        end)
+        setreadonly(Rm, true)
+        
+        RService.Stepped:Connect(function()
+            if NoClip == true and LocalP and LocalP.Character and LocalP.Character:FindFirstChild("Humanoid") then 
+                pcall(function() -- fuck errors
+                    LocalP.Character.Head.CanCollide = false 
+                    LocalP.Character.Torso.CanCollide = false
+                end)
+            end
+        end)
+        
+        Mouse.KeyDown:Connect(function(Key)
+            if Key == NoClipKey then 
+                NoClip = not NoClip
+                Notify("🤬 KevenGOD HUB 🤬", "NoClip: "..tostring(NoClip), "", 3)
+            end
+        end)
+  	end    
+})
+
+--////////////////////////////Teleportes Button\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    local plrTab = Window:MakeTab({
+        Name = "Teleportes",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    local Section = plrTab:AddSection({
+        Name = "❤️  Teleportes  ❤️"
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Base Terroristas",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-943.46,94.13,2063.63)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Base Guardas",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(835.529846, 101.464432, 2269.99023, -0.999971569, -4.20417455e-05, 0.00754758529, -1.35868931e-05, 0.999992907, 0.00376868248, -0.00754769007, 0.00376847223, -0.999964476)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Guarita",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(823.503357, 131.506485, 2588.01172, 0.999984443, -8.40800226e-07, -0.00558095239, 1.64979056e-07, 1, -0.00012109962, 0.00558095239, 0.000121096811, 0.999984443)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Cafeteria",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(930.730652, 101.483894, 2289.10107, -0.999725938, 7.88529724e-05, -0.0234090742, -8.93900324e-06, 0.999992967, 0.00375056826, 0.0234092046, 0.00374975009, -0.999718904)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Telhado",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(819.504395, 120.489983, 2314.3269, -0.999637842, 4.65423007e-08, -0.0269098058, 4.74516071e-08, 1, -3.31523786e-08, 0.0269098058, -3.44172868e-08, -0.999637842)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Patio",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(793.63031, 99.6199646, 2514.92041, 0.999958456, -6.63278934e-06, 0.00911314599, -2.43353975e-06, 0.999999523, 0.000996038318, -0.00911314785, -0.000996019109, 0.999957979)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Predio",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-279.263794, 115.733665, 2018.42419, -0.807779908, 0.00226620445, -0.589479864, -9.52207392e-06, 0.999992549, 0.00385742239, 0.589484215, 0.00312155671, -0.807773888)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Entrada",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(471.318512, 99.6888123, 2252.88062, -0.0221492276, 0.00220945058, -0.999752223, -2.3008115e-06, 0.999997556, 0.0022100436, 0.999754667, 5.12510996e-05, -0.022149168)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Garagem",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(615.4823, 99.534996, 2481.97241, 0.997877181, 0.000265432667, 0.0651230291, -2.94564552e-06, 0.999991894, -0.00403073942, -0.065123558, 0.00402199151, 0.997869074)
+          end    
+    })
+
+    plrTab:AddButton({
+        Name = "👻  Esgoto",
+        Callback = function()
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(916.956543, 80.1650085, 2226.51001, 0.999491513, -8.05209129e-05, -0.0318848044, 1.86128432e-06, 0.99999696, -0.00246737758, 0.0318849012, 0.00246606418, 0.999488473)
+          end    
+    })
+    
+    --////////////////////////////Teams FUNC\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    local Teams = Window:MakeTab({
+        Name = "Times",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    local Teams = Teams:AddSection({
+        Name = "💫  Times  💫"
+    })
+
+    Teams:AddButton({
+        Name = "💥  Terrorista",
+        Callback = function()
+            wait(0.3)
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-976.125183, 109.123924, 2059.99536)
+
+            wait(0.3)
+            game.Players.LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(-943.46,94.13,2063.63)
+
+          end    
+    })
+
+    Teams:AddButton({
+        Name = "😈  Prisioneiro",
+        Callback = function()
+                local A_1 = "Bright orange"
+                local Event = game:GetService("Workspace").Remote.TeamEvent
+                Event:FireServer(A_1)
+
+          end    
+    })
+
+    Teams:AddButton({
+        Name = "🌀  Guarda",
+        Callback = function()
+                local A_1 = "Bright blue"
+                local Event = game:GetService("Workspace").Remote.TeamEvent
+                Event:FireServer(A_1)
+
+                end    
+    })
+
+    Teams:AddButton({
+        Name = "🌑  Neutro",
+        Callback = function()
+                local A_1 = "Medium stone grey"
+                local Event = game:GetService("Workspace").Remote.TeamEvent
+                Event:FireServer(A_1)
+
+          end    
+    })
+
+--////////////////////////////Outros FUNC\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+local Outros = Window:MakeTab({
+    Name = "Outros",
+    Icon = "rbxassetid://4483345998",
+    PremiumOnly = false
+})
+
+local Section = Outros:AddSection({
+    Name = "💣 Removedores  💣"
+})
+
+Outros:AddButton({
+    Name = "💣  Btools",
+    Callback = function()
+        local tool1   = Instance.new("HopperBin",game.Players.LocalPlayer.Backpack)
+        tool1.BinType = "Hammer"
+
+      end    
+})
+
+Outros:AddButton({
+    Name = "💣  Remover Portas",
+    Callback = function()
+        loadstring(game:HttpGet("https://pastebin.com/raw/kgzy5hVA", true))()
+      end
+})
+
+Outros:AddButton({
+    Name = "💣  Remover Paredes",
+    Callback = function()
+        wait(0.1)
+        game.Workspace.Prison_Guard_Outpost:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.building:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.glass:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.oven:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.shelves:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.vents:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.accents:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.vendingmachine:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.Prison_table1:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.counter:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cafeteria.boxes:Remove()
+
+      end    
+})
+
+Outros:AddButton({
+    Name = "💣  Remover Tudo",
+    Callback = function()
+        wait(0.1)
+        game.Workspace.Prison_Halls.walls:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Halls.roof:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Halls.outlines:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Halls.lights:Remove()
+        
+        wait(0.1)
+        Workspace.Prison_Halls.accent:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Halls.glass:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.b_front:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.doors:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.c_tables:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.a_front:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.b_outerwall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.c_wall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.b_wall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.c_hallwall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.a_outerwall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.b_ramp:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.a_ramp:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.a_walls:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.Cells_B:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.Cells_A:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.c_corner:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.Wedge:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.a_ceiling:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Cellblock.b_ceiling:Remove()
+        
+        wait(0.1)
+        game.Workspace.City_buildings:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_OuterWall:Remove()
+        
+        wait(0.1)
+        game.Workspace.Prison_Fences:Remove()
+        
+      end    
+})
+
+    --////////////////////////////Creditos Button\\\\\\\\\\\\\\\\\\\\\\\\\\\\\--
+    
+    local Creditos = Window:MakeTab({
+        Name = "Créditos",
+        Icon = "rbxassetid://4483345998",
+        PremiumOnly = false
+    })
+
+    local Section = Creditos:AddSection({
+        Name = "Créditos"
+    })
+
+
+    Creditos:AddLabel("🤬  Script Feito Por:KevenGOD#9999  🤬")
+
+    Creditos:AddButton({
+        Name = "💉  Botão de Panico (Destruct)",
+        Callback = function()
+            OrionLib:Destroy()
+          end    
+    })
+    
+OrionLib:Init()
