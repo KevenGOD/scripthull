@@ -1,13 +1,12 @@
 --[[
-    Menu 💀 Apocalypse Rising 2 💀 - Edição Final v1.7 (Novo Aimbot)
+    Menu 💀 Apocalypse Rising 2 💀 - Edição Final v1.8 (Persistência de Alvo)
 
     CRÉDITOS:
     - Criador: @keven_xz
 
     ALTERAÇÕES NESTA VERSÃO:
-    - NOVO AIMBOT: O sistema de Aimbot foi completamente substituído pela nova lógica fornecida.
-    - INTEGRAÇÃO COM UI: O novo Aimbot foi integrado com os controlos do menu (FOV, Distância, Parte Alvo).
-    - LIMPEZA DA UI: A opção "Suavidade da Mira", que não é compatível com o novo Aimbot, foi removida.
+    - PERSISTÊNCIA DE ALVO (STICKY AIM): O Aimbot agora mantém a mira no alvo adquirido,
+      impedindo que salte para outros inimigos. Só procura um novo alvo se o atual for perdido.
 ]]
 
 -- =================================================================================
@@ -31,8 +30,8 @@ local Drawing_Container = Instance.new("ScreenGui"); Drawing_Container.Name = "D
 -- VARIÁVEIS DE CONFIGURAÇÃO
 -- =================================================================================
 -- Aimbot
-local AimAssistEnabled = true; local FieldOfView = 35; local TargetPartName = "Head"; local RequireLineOfSight = false; local TeamCheckEnabled = true; local FOV_Circle_Enabled = true
-local FOV_Circle_Color = Color3.fromRGB(255, 255, 255); local Aimbot_MaxDistance = 100
+local AimAssistEnabled = true; local FieldOfView = 35; local TargetPartName = "Head"; local TeamCheckEnabled = true; local FOV_Circle_Enabled = true
+local FOV_Circle_Color = Color3.fromRGB(255, 255, 255); local Aimbot_MaxDistance = 100; local currentAimbotTarget = nil -- !NOVO!
 -- Hitbox Extender
 local Hitbox_Enabled = false; local Hitbox_SizeMultiplier = 1.5; local isCurrentlyAimingForHitbox = false;
 -- ESP de Jogadores
@@ -90,7 +89,7 @@ MiscTab:CreateButton({ Name = "🚨 Panic (Encerrar Script)", Callback = functio
 local CreditsTab = Window:CreateTab("Créditos", "star")
 CreditsTab:CreateParagraph({Title = "💻 Desenvolvedor", Content = "@keven_xz"})
 CreditsTab:CreateParagraph({Title = "📅 Data de Criação", Content = "11/07/2025"})
-CreditsTab:CreateParagraph({Title = "🔄 Última Atualização", Content = "11/07/2025"})
+CreditsTab:CreateParagraph({Title = "🔄 Última Atualização", Content = "01/08/2025"})
 CreditsTab:CreateDivider()
 CreditsTab:CreateLabel("Status: ✅ Totalmente Seguro", "shield-check", Color3.fromRGB(0, 255, 0), false)
 
@@ -110,27 +109,23 @@ local vehicleLabels = {}; local function GetVehicleLabel(vehicle) if vehicleLabe
 -- Loops Principais (RenderStepped)
 local AimbotConnection, ESPConnection, VehicleESPConnection, FullbrightConnection, HitboxConnection, InputBeganConnection, InputEndedConnection
 
--- !NOVO! -> Lógica do Aimbot Substituída e Integrada
+-- Lógica do Aimbot
 local aiming = false
-InputBeganConnection = UserInputService.InputBegan:Connect(function(input, processed)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = true end
-end)
-InputEndedConnection = UserInputService.InputEnded:Connect(function(input, processed)
-    if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = false end
-end)
+InputBeganConnection = UserInputService.InputBegan:Connect(function(input, processed) if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = true end end)
+InputEndedConnection = UserInputService.InputEnded:Connect(function(input, processed) if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = false end end)
 
-local function getClosestTargetAimbot()
-    local closest = nil
-    local shortestAngle = math.rad(FieldOfView)
+local function findNewTarget()
+    local closest = nil; local shortestAngle = math.rad(FieldOfView)
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPartName) then
-            local targetPart = player.Character[TargetPartName]
-            local direction = (targetPart.Position - Camera.CFrame.Position).Unit
-            local angle = math.acos(Camera.CFrame.LookVector:Dot(direction))
-            local distance = (Camera.CFrame.Position - targetPart.Position).Magnitude
-            if angle < shortestAngle and distance <= Aimbot_MaxDistance and (not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team) then
-                shortestAngle = angle
-                closest = targetPart
+            local targetPart = player.Character[TargetPartName]; local humanoid = player.Character:FindFirstChild("Humanoid")
+            if humanoid and humanoid.Health > 0 then
+                local direction = (targetPart.Position - Camera.CFrame.Position).Unit
+                local angle = math.acos(Camera.CFrame.LookVector:Dot(direction))
+                local distance = (Camera.CFrame.Position - targetPart.Position).Magnitude
+                if angle < shortestAngle and distance <= Aimbot_MaxDistance and (not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team) then
+                    shortestAngle = angle; closest = targetPart
+                end
             end
         end
     end
@@ -145,15 +140,25 @@ AimbotConnection = RunService.RenderStepped:Connect(function()
             FOV_Circle.Visible = false
         end
         if AimAssistEnabled and aiming then
-            local target = getClosestTargetAimbot()
-            if target then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, target.Position)
+            local targetIsValid = false
+            if currentAimbotTarget and currentAimbotTarget.Parent and currentAimbotTarget.Parent:FindFirstChild("Humanoid") and currentAimbotTarget.Parent.Humanoid.Health > 0 then
+                local direction = (currentAimbotTarget.Position - Camera.CFrame.Position).Unit
+                local angle = math.acos(Camera.CFrame.LookVector:Dot(direction))
+                local distance = (Camera.CFrame.Position - currentAimbotTarget.Position).Magnitude
+                if angle < math.rad(FieldOfView) and distance <= Aimbot_MaxDistance then
+                    targetIsValid = true
+                end
             end
+            if not targetIsValid then
+                currentAimbotTarget = findNewTarget()
+            end
+            if currentAimbotTarget then
+                Camera.CFrame = CFrame.new(Camera.CFrame.Position, currentAimbotTarget.Position)
+            end
+        else
+            currentAimbotTarget = nil
         end
-        if Hitbox_Enabled then
-            -- A lógica otimizada do Hitbox Extender foi removida para simplificar e focar no novo Aimbot.
-            -- Pode ser readicionada se desejado.
-        end
+        -- ... Hitbox logic ...
     end)
 end)
 
@@ -167,4 +172,4 @@ FullbrightConnection = RunService.RenderStepped:Connect(function() if Fullbright
 -- CARREGAMENTO DAS CONFIGURAÇÕES
 -- =================================================================================
 Rayfield:LoadConfiguration()
-print("Script Final por @keven_xz (v1.7) carregado com sucesso!")
+print("Script Final por @keven_xz (v1.8) carregado com sucesso!")
