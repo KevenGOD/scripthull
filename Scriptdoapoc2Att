@@ -1,12 +1,13 @@
 --[[
-    Menu 💀 Apocalypse Rising 2 💀 - Edição Final v1.8 (Persistência de Alvo)
+    Menu 💀 Apocalypse Rising 2 💀 - v2.0 (Síntese Final)
 
     CRÉDITOS:
     - Criador: @keven_xz
 
     ALTERAÇÕES NESTA VERSÃO:
-    - PERSISTÊNCIA DE ALVO (STICKY AIM): O Aimbot agora mantém a mira no alvo adquirido,
-      impedindo que salte para outros inimigos. Só procura um novo alvo se o atual for perdido.
+    - SÍNTESE DE AIMBOT: Combinada a lógica de persistência e previsão de alvo com o método
+      de mira 'mousemoverel' para garantir precisão máxima com todas as armas.
+    - SUAVIDADE DA MIRA: A funcionalidade de suavidade foi reintroduzida e está funcional.
 ]]
 
 -- =================================================================================
@@ -30,8 +31,9 @@ local Drawing_Container = Instance.new("ScreenGui"); Drawing_Container.Name = "D
 -- VARIÁVEIS DE CONFIGURAÇÃO
 -- =================================================================================
 -- Aimbot
-local AimAssistEnabled = true; local FieldOfView = 35; local TargetPartName = "Head"; local TeamCheckEnabled = true; local FOV_Circle_Enabled = true
-local FOV_Circle_Color = Color3.fromRGB(255, 255, 255); local Aimbot_MaxDistance = 100; local currentAimbotTarget = nil -- !NOVO!
+local AimAssistEnabled = true; local FieldOfView = 150; local TargetPartName = "Head"; local TeamCheckEnabled = true; local FOV_Circle_Enabled = true
+local FOV_Circle_Color = Color3.fromRGB(255, 255, 255); local Aimbot_MaxDistance = 300; local currentAimbotTarget = nil
+local AimOffset_Vertical = 0.0; local AimPrediction_Movement = 0.1; local Smoothness = 1.0
 -- Hitbox Extender
 local Hitbox_Enabled = false; local Hitbox_SizeMultiplier = 1.5; local isCurrentlyAimingForHitbox = false;
 -- ESP de Jogadores
@@ -51,14 +53,19 @@ local originalHeadSizes = {}
 local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 AimbotTab:CreateLabel("🎯 Aimbot ativado com: Botão Direito do Rato")
 AimbotTab:CreateToggle({Name = "✅ Ativar Aimbot", CurrentValue = AimAssistEnabled, Flag = "AimbotEnabledFlag_Final", Callback = function(Value) AimAssistEnabled = Value end,})
-AimbotTab:CreateSlider({ Name = "⭕ Campo de Visão (FOV)", Range = {10, 180}, Increment = 5, Suffix = "°", CurrentValue = FieldOfView, Flag = "AimbotFOVFlag_Final", Callback = function(Value) FieldOfView = Value end,})
+AimbotTab:CreateSlider({ Name = "⭕ Campo de Visão (FOV)", Range = {10, 500}, Increment = 10, Suffix = "px", CurrentValue = FieldOfView, Flag = "AimbotFOVFlag_Final", Callback = function(Value) FieldOfView = Value end,})
 AimbotTab:CreateSlider({ Name = "📏 Distância Máxima do Aimbot", Range = {10, 1000}, Increment = 10, Suffix = "m", CurrentValue = Aimbot_MaxDistance, Flag = "AimbotMaxDistance_Final", Callback = function(Value) Aimbot_MaxDistance = Value end,})
+AimbotTab:CreateSlider({ Name = "💨 Suavidade da Mira", Range = {0.1, 1}, Increment = 0.1, Suffix = "", CurrentValue = Smoothness, Flag = "AimbotSmoothnessFlag_Final", Callback = function(Value) Smoothness = Value end,})
 AimbotTab:CreateDropdown({ Name = "💀 Parte do Corpo Alvo", Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, CurrentOption = {"Head"}, MultipleOptions = false, Flag = "AimbotTargetPartFlag_Final", Callback = function(Options) TargetPartName = Options[1] end,})
 AimbotTab:CreateToggle({ Name = "🛡️ Verificar Time (Inimigos)", CurrentValue = TeamCheckEnabled, Flag = "AimbotTeamCheck_Final", Callback = function(Value) TeamCheckEnabled = Value end,})
 AimbotTab:CreateToggle({ Name = "👁️ Desenhar Círculo de FOV", CurrentValue = FOV_Circle_Enabled, Flag = "AimbotDrawFOV_Final", Callback = function(Value) FOV_Circle_Enabled = Value end,})
 AimbotTab:CreateColorPicker({ Name = "🎨 Cor do Círculo de FOV", Color = FOV_Circle_Color, Flag = "FOVCircleColor_Final", Callback = function(Value) FOV_Circle_Color = Value end })
 AimbotTab:CreateDivider()
-AimbotTab:CreateParagraph({Title = "💥 Hitbox Extender", Content = "Aumenta a cabeça dos inimigos enquanto mira. AVISO: Usar valores altos no slider pode causar instabilidade e congelar o jogo!"})
+AimbotTab:CreateParagraph({Title = "🎯 Previsão de Mira", Content = "Se a mira estiver baixa, aumente a Compensação Vertical.\nSe a mira estiver atrás de alvos em movimento, aumente a Previsão de Movimento."})
+AimbotTab:CreateSlider({ Name = "⬆️ Compensação Vertical (Queda)", Range = {-5, 5}, Increment = 0.1, Suffix = " studs", CurrentValue = AimOffset_Vertical, Flag = "AimbotVerticalOffset_Final", Callback = function(Value) AimOffset_Vertical = Value end,})
+AimbotTab:CreateSlider({ Name = "➡️ Previsão de Movimento", Range = {0, 0.5}, Increment = 0.01, Suffix = "s", CurrentValue = AimPrediction_Movement, Flag = "AimbotMovePredict_Final", Callback = function(Value) AimPrediction_Movement = Value end,})
+AimbotTab:CreateDivider()
+AimbotTab:CreateParagraph({Title = "💥 Hitbox Extender", Content = "Aumenta a cabeça dos inimigos enquanto mira. AVISO: Usar valores altos no slider pode causar instabilidade!"})
 AimbotTab:CreateToggle({Name = "✅ Ativar Hitbox Extender", CurrentValue = Hitbox_Enabled, Flag = "HitboxEnabled_Final", Callback = function(Value) Hitbox_Enabled = Value; if not Value then for player, data in pairs(originalHeadSizes) do if data.head and data.head.Parent then data.head.Size = data.originalSize end end; originalHeadSizes = {} end end,})
 AimbotTab:CreateSlider({ Name = "📏 Tamanho da Extensão", Range = {1.0, 8.0}, Increment = 0.1, Suffix = "x", CurrentValue = Hitbox_SizeMultiplier, Flag = "HitboxSize_Final", Callback = function(Value) Hitbox_SizeMultiplier = Value end,})
 
@@ -84,11 +91,11 @@ ESPTab:CreateColorPicker({ Name = "🎨 Cor do ESP de Veículos", Color = Vehicl
 local MiscTab = Window:CreateTab("Misc", "settings")
 MiscTab:CreateToggle({ Name = "☀️ Fullbright (Sempre Dia)", CurrentValue = Fullbright_Enabled, Flag = "FullbrightEnabled_Final", Callback = function(Value) Fullbright_Enabled = Value; if Fullbright_Enabled then if originalAmbient == nil then originalAmbient = Lighting.Ambient; originalOutdoorAmbient = Lighting.OutdoorAmbient; originalBrightness = Lighting.Brightness; originalFogEnd = Lighting.FogEnd end else if originalAmbient ~= nil then Lighting.Ambient = originalAmbient; Lighting.OutdoorAmbient = originalOutdoorAmbient; Lighting.Brightness = originalBrightness; Lighting.FogEnd = originalFogEnd end end end,})
 MiscTab:CreateDivider()
-MiscTab:CreateButton({ Name = "🚨 Panic (Encerrar Script)", Callback = function() AimAssistEnabled, ESP_Enabled, VehicleESP_Enabled, Fullbright_Enabled, Hitbox_Enabled = false, false, false, false, false; if originalAmbient ~= nil then Lighting.Ambient = originalAmbient; Lighting.OutdoorAmbient = originalOutdoorAmbient; Lighting.Brightness = originalBrightness; Lighting.FogEnd = originalFogEnd end; for player, data in pairs(originalHeadSizes) do if data.head and data.head.Parent then data.head.Size = data.originalSize end end; originalHeadSizes = {}; RunService.RenderStepped:Wait(); if AimbotConnection then AimbotConnection:Disconnect() end; if ESPConnection then ESPConnection:Disconnect() end; if VehicleESPConnection then VehicleESPConnection:Disconnect() end; if FullbrightConnection then FullbrightConnection:Disconnect() end; if InputBeganConnection then InputBeganConnection:Disconnect() end; if InputEndedConnection then InputEndedConnection:Disconnect() end; if FOV_Circle then FOV_Circle.Visible = false; FOV_Circle = nil end; if Drawing_Container then Drawing_Container:Destroy() end; Rayfield:Destroy() end,})
+MiscTab:CreateButton({ Name = "🚨 Panic (Encerrar Script)", Callback = function() AimAssistEnabled, ESP_Enabled, VehicleESP_Enabled, Fullbright_Enabled, Hitbox_Enabled = false, false, false, false, false; if originalAmbient ~= nil then Lighting.Ambient = originalAmbient; Lighting.OutdoorAmbient = originalOutdoorAmbient; Lighting.Brightness = originalBrightness; Lighting.FogEnd = originalFogEnd end; for player, data in pairs(originalHeadSizes) do if data.head and data.head.Parent then data.head.Size = data.originalSize end end; originalHeadSizes = {}; RunService.RenderStepped:Wait(); if AimbotConnection then AimbotConnection:Disconnect() end; if ESPConnection then ESPConnection:Disconnect() end; if VehicleESPConnection then VehicleESPConnection:Disconnect() end; if FullbrightConnection then FullbrightConnection:Disconnect() end; if FOV_Circle then FOV_Circle.Visible = false; FOV_Circle = nil end; if Drawing_Container then Drawing_Container:Destroy() end; Rayfield:Destroy() end,})
 
 local CreditsTab = Window:CreateTab("Créditos", "star")
 CreditsTab:CreateParagraph({Title = "💻 Desenvolvedor", Content = "@keven_xz"})
-CreditsTab:CreateParagraph({Title = "📅 Data de Criação", Content = "11/07/2025"})
+CreditsTab:CreateParagraph({Title = "📅 Data de Criação", Content = "01/08/2025"})
 CreditsTab:CreateParagraph({Title = "🔄 Última Atualização", Content = "01/08/2025"})
 CreditsTab:CreateDivider()
 CreditsTab:CreateLabel("Status: ✅ Totalmente Seguro", "shield-check", Color3.fromRGB(0, 255, 0), false)
@@ -96,7 +103,6 @@ CreditsTab:CreateLabel("Status: ✅ Totalmente Seguro", "shield-check", Color3.f
 -- =================================================================================
 -- LÓGICA DO SCRIPT
 -- =================================================================================
--- Funções Auxiliares
 local FOV_Circle = Drawing.new("Circle"); FOV_Circle.Visible = false; FOV_Circle.Thickness = 1; FOV_Circle.NumSides = 64; FOV_Circle.Filled = false
 local linePool = {}; local function GetLine() if #linePool > 0 then local line = table.remove(linePool); line.Visible = true; return line; end; local line = Instance.new("Frame"); line.AnchorPoint = Vector2.new(0.5, 0.5); line.BorderSizePixel = 0; line.Parent = Drawing_Container; return line; end
 local function ReturnLine(line) line.Visible = false; table.insert(linePool, line); end; local usedLines = {}
@@ -106,59 +112,37 @@ local ORIGINAL_NAME_SIZE = 14; local ORIGINAL_INFO_SIZE = 12
 local playerLabels = {}; local function GetPlayerLabel(player) if playerLabels[player] then return playerLabels[player].name, playerLabels[player].info end; local nameLabel = Instance.new("TextLabel"); nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextColor3 = Text_Color; nameLabel.BackgroundTransparency = 1; nameLabel.TextStrokeTransparency = 0; nameLabel.AnchorPoint = Vector2.new(0.5, 1); nameLabel.Parent = Drawing_Container; local infoLabel = Instance.new("TextLabel"); infoLabel.Font = Enum.Font.SourceSansSemibold; infoLabel.TextColor3 = Text_Color; infoLabel.BackgroundTransparency = 1; infoLabel.TextStrokeTransparency = 0; infoLabel.AnchorPoint = Vector2.new(0.5, 0); infoLabel.Parent = Drawing_Container; playerLabels[player] = {name = nameLabel, info = infoLabel}; return nameLabel, infoLabel; end
 local vehicleLabels = {}; local function GetVehicleLabel(vehicle) if vehicleLabels[vehicle] then return vehicleLabels[vehicle] end; local newLabel = Instance.new("TextLabel"); newLabel.TextSize = 14; newLabel.Font = Enum.Font.SourceSansBold; newLabel.BackgroundTransparency = 1; newLabel.TextStrokeTransparency = 0; newLabel.AnchorPoint = Vector2.new(0.5, 0); newLabel.Parent = Drawing_Container; vehicleLabels[vehicle] = newLabel; return newLabel; end
 
--- Loops Principais (RenderStepped)
-local AimbotConnection, ESPConnection, VehicleESPConnection, FullbrightConnection, HitboxConnection, InputBeganConnection, InputEndedConnection
-
--- Lógica do Aimbot
-local aiming = false
-InputBeganConnection = UserInputService.InputBegan:Connect(function(input, processed) if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = true end end)
-InputEndedConnection = UserInputService.InputEnded:Connect(function(input, processed) if input.UserInputType == Enum.UserInputType.MouseButton2 then aiming = false end end)
-
-local function findNewTarget()
-    local closest = nil; local shortestAngle = math.rad(FieldOfView)
-    for _, player in pairs(Players:GetPlayers()) do
-        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPartName) then
-            local targetPart = player.Character[TargetPartName]; local humanoid = player.Character:FindFirstChild("Humanoid")
-            if humanoid and humanoid.Health > 0 then
-                local direction = (targetPart.Position - Camera.CFrame.Position).Unit
-                local angle = math.acos(Camera.CFrame.LookVector:Dot(direction))
-                local distance = (Camera.CFrame.Position - targetPart.Position).Magnitude
-                if angle < shortestAngle and distance <= Aimbot_MaxDistance and (not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team) then
-                    shortestAngle = angle; closest = targetPart
-                end
-            end
-        end
-    end
-    return closest
-end
+local AimbotConnection, ESPConnection, VehicleESPConnection, FullbrightConnection
+local function findNewTarget() local closest = nil; local shortestDist = FieldOfView; for _, player in ipairs(Players:GetPlayers()) do if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild(TargetPartName) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then local targetPart = player.Character[TargetPartName]; local distance = (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude; if distance <= Aimbot_MaxDistance then if not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team then local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position); if onScreen then local mousePosition = UserInputService:GetMouseLocation(); local fovDistance = (Vector2.new(screenPoint.X, screenPoint.Y) - mousePosition).Magnitude; if fovDistance < shortestDist then shortestDist = fovDistance; closest = targetPart end end end end end end; return closest end
 
 AimbotConnection = RunService.RenderStepped:Connect(function()
     pcall(function()
         if AimAssistEnabled and FOV_Circle_Enabled then
-            FOV_Circle.Visible = true; FOV_Circle.Color = FOV_Circle_Color; FOV_Circle.Radius = FieldOfView * 2; FOV_Circle.Position = Vector2.new(Camera.ViewportSize.X/2, Camera.ViewportSize.Y/2)
+            FOV_Circle.Visible = true; FOV_Circle.Color = FOV_Circle_Color; FOV_Circle.Radius = FieldOfView; FOV_Circle.Position = UserInputService:GetMouseLocation()
         else
             FOV_Circle.Visible = false
         end
-        if AimAssistEnabled and aiming then
+        local isAiming = UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton2)
+        if AimAssistEnabled and isAiming then
             local targetIsValid = false
             if currentAimbotTarget and currentAimbotTarget.Parent and currentAimbotTarget.Parent:FindFirstChild("Humanoid") and currentAimbotTarget.Parent.Humanoid.Health > 0 then
-                local direction = (currentAimbotTarget.Position - Camera.CFrame.Position).Unit
-                local angle = math.acos(Camera.CFrame.LookVector:Dot(direction))
-                local distance = (Camera.CFrame.Position - currentAimbotTarget.Position).Magnitude
-                if angle < math.rad(FieldOfView) and distance <= Aimbot_MaxDistance then
-                    targetIsValid = true
-                end
+                local screenPoint, onScreen = Camera:WorldToViewportPoint(currentAimbotTarget.Position)
+                local distance = (LocalPlayer.Character.HumanoidRootPart.Position - currentAimbotTarget.Position).Magnitude
+                if onScreen and (Vector2.new(screenPoint.X, screenPoint.Y) - UserInputService:GetMouseLocation()).Magnitude < FieldOfView and distance <= Aimbot_MaxDistance then targetIsValid = true end
             end
-            if not targetIsValid then
-                currentAimbotTarget = findNewTarget()
-            end
+            if not targetIsValid then currentAimbotTarget = findNewTarget() end
             if currentAimbotTarget then
-                Camera.CFrame = CFrame.new(Camera.CFrame.Position, currentAimbotTarget.Position)
+                local aimAtPosition = currentAimbotTarget.Position + Vector3.new(0, AimOffset_Vertical, 0) + (currentAimbotTarget.Velocity * AimPrediction_Movement)
+                local screenPoint, onScreen = Camera:WorldToViewportPoint(aimAtPosition)
+                if onScreen then
+                    local mouseDelta = Vector2.new(screenPoint.X, screenPoint.Y) - UserInputService:GetMouseLocation()
+                    mousemoverel(mouseDelta.X * Smoothness, mouseDelta.Y * Smoothness)
+                end
             end
         else
             currentAimbotTarget = nil
         end
-        -- ... Hitbox logic ...
+        if Hitbox_Enabled then if isAiming and not isCurrentlyAimingForHitbox then isCurrentlyAimingForHitbox = true; for _, player in ipairs(Players:GetPlayers()) do if player ~= LocalPlayer and player.Character then local head = player.Character:FindFirstChild("Head"); if head and not originalHeadSizes[player] then originalHeadSizes[player] = {head = head, originalSize = head.Size}; head.Size = head.Size * Hitbox_SizeMultiplier end end end elseif not isAiming and isCurrentlyAimingForHitbox then isCurrentlyAimingForHitbox = false; for player, data in pairs(originalHeadSizes) do if data.head and data.head.Parent then data.head.Size = data.originalSize end end; originalHeadSizes = {} end end
     end)
 end)
 
@@ -172,4 +156,4 @@ FullbrightConnection = RunService.RenderStepped:Connect(function() if Fullbright
 -- CARREGAMENTO DAS CONFIGURAÇÕES
 -- =================================================================================
 Rayfield:LoadConfiguration()
-print("Script Final por @keven_xz (v1.8) carregado com sucesso!")
+print("Script Final por @keven_xz (v2.0 - Síntese Final) carregado com sucesso!")
