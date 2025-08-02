@@ -1,13 +1,13 @@
 --[[
-    Menu 💀 Apocalypse Rising 2 💀 - v2.1 (Correção de Precisão)
+    Menu 💀 Apocalypse Rising 2 💀 - v2.2 (Aimbot Sintetizado)
 
     CRÉDITOS:
     - Criador: @keven_xz
 
     ALTERAÇÕES NESTA VERSÃO:
-    - CORREÇÃO DE PRECISÃO: A lógica de mira foi refinada para ser mais precisa.
-    - PREVISÃO SIMPLIFICADA: As duas opções de previsão foram unificadas num único e mais
-      eficaz slider de "Previsão de Alvo" para facilitar o ajuste fino.
+    - NOVO MÉTODO DE DETEÇÃO: Implementada a nova função 'getClosestToMouse' fornecida pelo utilizador.
+    - SÍNTESE DE MIRA: Combinado o novo método de deteção com o sistema de mira 'mousemoverel' para
+      garantir a máxima precisão e compatibilidade com as opções do menu (como a suavidade).
 ]]
 
 -- =================================================================================
@@ -56,7 +56,6 @@ AimbotTab:CreateToggle({Name = "✅ Ativar Aimbot", CurrentValue = AimAssistEnab
 AimbotTab:CreateSlider({ Name = "⭕ Campo de Visão (FOV)", Range = {10, 500}, Increment = 10, Suffix = "px", CurrentValue = FieldOfView, Flag = "AimbotFOVFlag_Final", Callback = function(Value) FieldOfView = Value end,})
 AimbotTab:CreateSlider({ Name = "📏 Distância Máxima", Range = {10, 1000}, Increment = 10, Suffix = "m", CurrentValue = Aimbot_MaxDistance, Flag = "AimbotMaxDistance_Final", Callback = function(Value) Aimbot_MaxDistance = Value end,})
 AimbotTab:CreateSlider({ Name = "💨 Suavidade da Mira", Range = {0.1, 1}, Increment = 0.1, Suffix = "", CurrentValue = Smoothness, Flag = "AimbotSmoothnessFlag_Final", Callback = function(Value) Smoothness = Value end,})
--- !ATUALIZADO! -> Slider de Previsão Simplificado
 AimbotTab:CreateSlider({ Name = "🎯 Previsão de Alvo", Range = {0, 0.5}, Increment = 0.01, Suffix = "s", CurrentValue = PredictionAmount, Flag = "AimbotPrediction_Final", Callback = function(Value) PredictionAmount = Value end,})
 AimbotTab:CreateDropdown({ Name = "💀 Parte do Corpo Alvo", Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, CurrentOption = {"Head"}, MultipleOptions = false, Flag = "AimbotTargetPartFlag_Final", Callback = function(Options) TargetPartName = Options[1] end,})
 AimbotTab:CreateToggle({ Name = "🛡️ Verificar Time (Inimigos)", CurrentValue = TeamCheckEnabled, Flag = "AimbotTeamCheck_Final", Callback = function(Value) TeamCheckEnabled = Value end,})
@@ -110,9 +109,30 @@ local ORIGINAL_NAME_SIZE = 14; local ORIGINAL_INFO_SIZE = 12
 local playerLabels = {}; local function GetPlayerLabel(player) if playerLabels[player] then return playerLabels[player].name, playerLabels[player].info end; local nameLabel = Instance.new("TextLabel"); nameLabel.Font = Enum.Font.SourceSansBold; nameLabel.TextColor3 = Text_Color; nameLabel.BackgroundTransparency = 1; nameLabel.TextStrokeTransparency = 0; nameLabel.AnchorPoint = Vector2.new(0.5, 1); nameLabel.Parent = Drawing_Container; local infoLabel = Instance.new("TextLabel"); infoLabel.Font = Enum.Font.SourceSansSemibold; infoLabel.TextColor3 = Text_Color; infoLabel.BackgroundTransparency = 1; infoLabel.TextStrokeTransparency = 0; infoLabel.AnchorPoint = Vector2.new(0.5, 0); infoLabel.Parent = Drawing_Container; playerLabels[player] = {name = nameLabel, info = infoLabel}; return nameLabel, infoLabel; end
 local vehicleLabels = {}; local function GetVehicleLabel(vehicle) if vehicleLabels[vehicle] then return vehicleLabels[vehicle] end; local newLabel = Instance.new("TextLabel"); newLabel.TextSize = 14; newLabel.Font = Enum.Font.SourceSansBold; newLabel.BackgroundTransparency = 1; newLabel.TextStrokeTransparency = 0; newLabel.AnchorPoint = Vector2.new(0.5, 0); newLabel.Parent = Drawing_Container; vehicleLabels[vehicle] = newLabel; return newLabel; end
 
-local AimbotConnection, ESPConnection, VehicleESPConnection, FullbrightConnection
-local function findNewTarget() local closest = nil; local shortestDist = FieldOfView; for _, player in ipairs(Players:GetPlayers()) do if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild(TargetPartName) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then local targetPart = player.Character[TargetPartName]; local distance = (LocalPlayer.Character.HumanoidRootPart.Position - targetPart.Position).Magnitude; if distance <= Aimbot_MaxDistance then if not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team then local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position); if onScreen then local mousePosition = UserInputService:GetMouseLocation(); local fovDistance = (Vector2.new(screenPoint.X, screenPoint.Y) - mousePosition).Magnitude; if fovDistance < shortestDist then shortestDist = fovDistance; closest = targetPart end end end end end end; return closest end
+-- !NOVO! -> Lógica do Aimbot Substituída e Integrada
+local function getClosestToMouse()
+    local closest, shortestDistance = nil, FieldOfView
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(TargetPartName) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local part = player.Character[TargetPartName]
+            local distanceFromPlayer = (Camera.CFrame.Position - part.Position).Magnitude
+            if distanceFromPlayer <= Aimbot_MaxDistance and (not TeamCheckEnabled or not player.Team or player.Team ~= LocalPlayer.Team) then
+                local screenPos, onScreen = Camera:WorldToViewportPoint(part.Position)
+                if onScreen then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local distance = (Vector2.new(screenPos.X, screenPos.Y) - mousePos).Magnitude
+                    if distance < shortestDistance then
+                        shortestDistance = distance
+                        closest = part
+                    end
+                end
+            end
+        end
+    end
+    return closest
+end
 
+local AimbotConnection, ESPConnection, VehicleESPConnection, FullbrightConnection
 AimbotConnection = RunService.RenderStepped:Connect(function()
     pcall(function()
         if AimAssistEnabled and FOV_Circle_Enabled then
@@ -128,7 +148,7 @@ AimbotConnection = RunService.RenderStepped:Connect(function()
                 local distance = (LocalPlayer.Character.HumanoidRootPart.Position - currentAimbotTarget.Position).Magnitude
                 if onScreen and (Vector2.new(screenPoint.X, screenPoint.Y) - UserInputService:GetMouseLocation()).Magnitude < FieldOfView and distance <= Aimbot_MaxDistance then targetIsValid = true end
             end
-            if not targetIsValid then currentAimbotTarget = findNewTarget() end
+            if not targetIsValid then currentAimbotTarget = getClosestToMouse() end
             if currentAimbotTarget then
                 local aimAtPosition = currentAimbotTarget.Position + (currentAimbotTarget.Velocity * PredictionAmount)
                 local screenPoint, onScreen = Camera:WorldToViewportPoint(aimAtPosition)
@@ -154,4 +174,4 @@ FullbrightConnection = RunService.RenderStepped:Connect(function() if Fullbright
 -- CARREGAMENTO DAS CONFIGURAÇÕES
 -- =================================================================================
 Rayfield:LoadConfiguration()
-print("Script Final por @keven_xz (v2.1 - Precisão) carregado com sucesso!")
+print("Script Final por @keven_xz (v2.2 - Síntese Final) carregado com sucesso!")
