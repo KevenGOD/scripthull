@@ -1,13 +1,13 @@
 --[[
-    Menu 💀 Apocalypse Rising 2 💀 - v2.0 (Síntese Final)
+    Menu 💀 Apocalypse Rising 2 💀 - v2.1 (Correção de Precisão)
 
     CRÉDITOS:
     - Criador: @keven_xz
 
     ALTERAÇÕES NESTA VERSÃO:
-    - SÍNTESE DE AIMBOT: Combinada a lógica de persistência e previsão de alvo com o método
-      de mira 'mousemoverel' para garantir precisão máxima com todas as armas.
-    - SUAVIDADE DA MIRA: A funcionalidade de suavidade foi reintroduzida e está funcional.
+    - CORREÇÃO DE PRECISÃO: A lógica de mira foi refinada para ser mais precisa.
+    - PREVISÃO SIMPLIFICADA: As duas opções de previsão foram unificadas num único e mais
+      eficaz slider de "Previsão de Alvo" para facilitar o ajuste fino.
 ]]
 
 -- =================================================================================
@@ -33,7 +33,7 @@ local Drawing_Container = Instance.new("ScreenGui"); Drawing_Container.Name = "D
 -- Aimbot
 local AimAssistEnabled = true; local FieldOfView = 150; local TargetPartName = "Head"; local TeamCheckEnabled = true; local FOV_Circle_Enabled = true
 local FOV_Circle_Color = Color3.fromRGB(255, 255, 255); local Aimbot_MaxDistance = 300; local currentAimbotTarget = nil
-local AimOffset_Vertical = 0.0; local AimPrediction_Movement = 0.1; local Smoothness = 1.0
+local PredictionAmount = 0.12; local Smoothness = 1.0
 -- Hitbox Extender
 local Hitbox_Enabled = false; local Hitbox_SizeMultiplier = 1.5; local isCurrentlyAimingForHitbox = false;
 -- ESP de Jogadores
@@ -54,16 +54,14 @@ local AimbotTab = Window:CreateTab("Aimbot", "crosshair")
 AimbotTab:CreateLabel("🎯 Aimbot ativado com: Botão Direito do Rato")
 AimbotTab:CreateToggle({Name = "✅ Ativar Aimbot", CurrentValue = AimAssistEnabled, Flag = "AimbotEnabledFlag_Final", Callback = function(Value) AimAssistEnabled = Value end,})
 AimbotTab:CreateSlider({ Name = "⭕ Campo de Visão (FOV)", Range = {10, 500}, Increment = 10, Suffix = "px", CurrentValue = FieldOfView, Flag = "AimbotFOVFlag_Final", Callback = function(Value) FieldOfView = Value end,})
-AimbotTab:CreateSlider({ Name = "📏 Distância Máxima do Aimbot", Range = {10, 1000}, Increment = 10, Suffix = "m", CurrentValue = Aimbot_MaxDistance, Flag = "AimbotMaxDistance_Final", Callback = function(Value) Aimbot_MaxDistance = Value end,})
+AimbotTab:CreateSlider({ Name = "📏 Distância Máxima", Range = {10, 1000}, Increment = 10, Suffix = "m", CurrentValue = Aimbot_MaxDistance, Flag = "AimbotMaxDistance_Final", Callback = function(Value) Aimbot_MaxDistance = Value end,})
 AimbotTab:CreateSlider({ Name = "💨 Suavidade da Mira", Range = {0.1, 1}, Increment = 0.1, Suffix = "", CurrentValue = Smoothness, Flag = "AimbotSmoothnessFlag_Final", Callback = function(Value) Smoothness = Value end,})
+-- !ATUALIZADO! -> Slider de Previsão Simplificado
+AimbotTab:CreateSlider({ Name = "🎯 Previsão de Alvo", Range = {0, 0.5}, Increment = 0.01, Suffix = "s", CurrentValue = PredictionAmount, Flag = "AimbotPrediction_Final", Callback = function(Value) PredictionAmount = Value end,})
 AimbotTab:CreateDropdown({ Name = "💀 Parte do Corpo Alvo", Options = {"Head", "HumanoidRootPart", "UpperTorso", "LowerTorso"}, CurrentOption = {"Head"}, MultipleOptions = false, Flag = "AimbotTargetPartFlag_Final", Callback = function(Options) TargetPartName = Options[1] end,})
 AimbotTab:CreateToggle({ Name = "🛡️ Verificar Time (Inimigos)", CurrentValue = TeamCheckEnabled, Flag = "AimbotTeamCheck_Final", Callback = function(Value) TeamCheckEnabled = Value end,})
 AimbotTab:CreateToggle({ Name = "👁️ Desenhar Círculo de FOV", CurrentValue = FOV_Circle_Enabled, Flag = "AimbotDrawFOV_Final", Callback = function(Value) FOV_Circle_Enabled = Value end,})
 AimbotTab:CreateColorPicker({ Name = "🎨 Cor do Círculo de FOV", Color = FOV_Circle_Color, Flag = "FOVCircleColor_Final", Callback = function(Value) FOV_Circle_Color = Value end })
-AimbotTab:CreateDivider()
-AimbotTab:CreateParagraph({Title = "🎯 Previsão de Mira", Content = "Se a mira estiver baixa, aumente a Compensação Vertical.\nSe a mira estiver atrás de alvos em movimento, aumente a Previsão de Movimento."})
-AimbotTab:CreateSlider({ Name = "⬆️ Compensação Vertical (Queda)", Range = {-5, 5}, Increment = 0.1, Suffix = " studs", CurrentValue = AimOffset_Vertical, Flag = "AimbotVerticalOffset_Final", Callback = function(Value) AimOffset_Vertical = Value end,})
-AimbotTab:CreateSlider({ Name = "➡️ Previsão de Movimento", Range = {0, 0.5}, Increment = 0.01, Suffix = "s", CurrentValue = AimPrediction_Movement, Flag = "AimbotMovePredict_Final", Callback = function(Value) AimPrediction_Movement = Value end,})
 AimbotTab:CreateDivider()
 AimbotTab:CreateParagraph({Title = "💥 Hitbox Extender", Content = "Aumenta a cabeça dos inimigos enquanto mira. AVISO: Usar valores altos no slider pode causar instabilidade!"})
 AimbotTab:CreateToggle({Name = "✅ Ativar Hitbox Extender", CurrentValue = Hitbox_Enabled, Flag = "HitboxEnabled_Final", Callback = function(Value) Hitbox_Enabled = Value; if not Value then for player, data in pairs(originalHeadSizes) do if data.head and data.head.Parent then data.head.Size = data.originalSize end end; originalHeadSizes = {} end end,})
@@ -132,7 +130,7 @@ AimbotConnection = RunService.RenderStepped:Connect(function()
             end
             if not targetIsValid then currentAimbotTarget = findNewTarget() end
             if currentAimbotTarget then
-                local aimAtPosition = currentAimbotTarget.Position + Vector3.new(0, AimOffset_Vertical, 0) + (currentAimbotTarget.Velocity * AimPrediction_Movement)
+                local aimAtPosition = currentAimbotTarget.Position + (currentAimbotTarget.Velocity * PredictionAmount)
                 local screenPoint, onScreen = Camera:WorldToViewportPoint(aimAtPosition)
                 if onScreen then
                     local mouseDelta = Vector2.new(screenPoint.X, screenPoint.Y) - UserInputService:GetMouseLocation()
@@ -156,4 +154,4 @@ FullbrightConnection = RunService.RenderStepped:Connect(function() if Fullbright
 -- CARREGAMENTO DAS CONFIGURAÇÕES
 -- =================================================================================
 Rayfield:LoadConfiguration()
-print("Script Final por @keven_xz (v2.0 - Síntese Final) carregado com sucesso!")
+print("Script Final por @keven_xz (v2.1 - Precisão) carregado com sucesso!")
